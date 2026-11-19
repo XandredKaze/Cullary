@@ -1,0 +1,7 @@
+node_modules/
+*.db
+*.db-*
+native/*.exe
+native/*.obj
+server/bin/
+app/dist/

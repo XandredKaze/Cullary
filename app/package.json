@@ -1,0 +1,38 @@
+{
+  "devDependencies": {
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0"
+  },
+  "name": "cullary",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "version": "0.1.0",
+  "build": {
+    "appId": "com.cullary.app",
+    "productName": "Cullary",
+    "files": [
+      "*.js",
+      "*.html",
+      "*.css"
+    ],
+    "extraResources": [
+      {
+        "from": "../native/apploopback.exe",
+        "to": "apploopback.exe"
+      }
+    ],
+    "win": {
+      "target": "portable"
+    },
+    "portable": {
+      "artifactName": "Cullary.exe"
+    },
+    "directories": {
+      "output": "dist"
+    }
+  }
+}

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; connect-src ws: wss:">
+<title>Cullary</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<form id="login">
+  <h1>Cullary</h1>
+  <label>Server o codice invito <input id="server" required placeholder="wss://….trycloudflare.com"></label>
+  <label>Utente <input id="user" required autocomplete="username"></label>
+  <label>Password <input id="pass" type="password" required autocomplete="current-password"></label>
+  <p id="login-error"></p>
+  <div><button value="login">Accedi</button><button value="register">Registrati</button></div>
+</form>
+
+<div id="app" hidden>
+  <aside>
+    <h2>Canali</h2>
+    <ul id="channels"></ul>
+    <input id="new-channel" placeholder="+ nuovo canale" maxlength="24">
+    <h2>Online</h2>
+    <ul id="online"></ul>
+    <button id="invite">📨 Invita amici</button>
+    <footer><b id="me"></b><button id="logout" title="Disconnetti">⏻</button></footer>
+  </aside>
+  <main>
+    <header><h3 id="chan-title"></h3><span id="status"></span></header>
+    <section id="stage"></section>
+    <nav id="controls">
+      <button id="mic">🎙 Microfono</button>
+      <button id="cam">📷 Webcam</button>
+      <button id="screen">🖥 Schermo</button>
+      <button id="app-share">🪟 App (video + audio)</button>
+      <button id="audio">🔈 Solo audio app</button>
+      <button id="leave">📞 Esci</button>
+    </nav>
+    <ul id="messages"></ul>
+    <form id="chat"><input id="text" placeholder="Scrivi un messaggio…" maxlength="2000" autocomplete="off"></form>
+  </main>
+</div>
+
+<dialog id="picker">
+  <h3>Scegli cosa condividere</h3>
+  <div id="picker-grid"></div>
+  <form method="dialog"><button>Annulla</button></form>
+</dialog>
+<script src="renderer.js"></script>
+</body>
+</html>
