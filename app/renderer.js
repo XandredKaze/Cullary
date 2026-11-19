@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
-const ICE = [{ urls: 'stun:stun.l.google.com:19302' }];
+let ICE = [{ urls: 'stun:stun.l.google.com:19302' }]; // sostituito dai server TURN che manda il server
 
 let invite = null;
 let ws, me = null, current = null, myVoice = null, channels = [], voice = {}, online = [];
@@ -59,7 +59,7 @@ function handle(m) {
       else status(m.text);
       break;
     case 'ready':
-      me = m.user; localStorage.token = m.token; channels = m.channels; invite = m.invite;
+      me = m.user; localStorage.token = m.token; channels = m.channels; invite = m.invite; if (m.ice) ICE = m.ice;
       $('#login').hidden = true; $('#app').hidden = false; $('#me').textContent = me;
       select(channels.includes(current) ? current : channels[0]);
       break;

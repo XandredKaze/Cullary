@@ -48,4 +48,16 @@ Il codice cambia a ogni riavvio del server, quindi dopo un riavvio va rimandato.
 
 Con `TUNNEL=0` il server resta raggiungibile solo in rete locale.
 
-Le chiamate sono peer-to-peer con il solo STUN di Google. Su alcune reti (NAT simmetrici, rete mobile, reti aziendali) serve un server TURN, che per ora non c'è.
+## TURN (per chi non riesce a collegarsi direttamente)
+
+Le chiamate sono peer-to-peer. Su alcune reti (NAT simmetrici, rete mobile, reti aziendali) il traffico deve passare da un relay TURN. Cullary usa il TURN di Cloudflare: i primi 1.000 GB al mese sono gratis, poi costa 0,05 $/GB.
+
+1. Su dash.cloudflare.com vai in **Realtime → TURN Server → Create**.
+2. Crea `server\.env` (è escluso da git) con:
+   ```
+   TURN_KEY_ID=<Turn Token ID>
+   TURN_KEY_API_TOKEN=<API Token>
+   ```
+3. Avvia il server con `npm start`: deve comparire `TURN Cloudflare attivo`.
+
+Senza chiavi il server funziona lo stesso, ma solo con connessioni dirette (STUN).

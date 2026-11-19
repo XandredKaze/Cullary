@@ -30,6 +30,29 @@ const q = {
   addMsg: db.prepare('INSERT INTO messages (channel, user, text, ts) VALUES (?, ?, ?, ?)'),
 };
 
+// TURN Cloudflare: relay per chi non riesce a collegarsi direttamente (NAT restrittivi, rete mobile).
+// Chiavi in server/.env (TURN_KEY_ID, TURN_KEY_API_TOKEN); senza chiavi si usa solo STUN.
+// ponytail: una credenziale da 24 h condivisa da tutti, rigenerata ogni 12 h; per-utente se servirà revocare singoli
+let ice = null, iceAt = 0;
+async function iceServers() {
+  const { TURN_KEY_ID: id, TURN_KEY_API_TOKEN: token } = process.env;
+  if (!id || !token || (ice && Date.now() - iceAt < 12 * 3600e3)) return ice;
+  try {
+    const r = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${id}/credentials/generate-ice-servers`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ttl: 86400 }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status} ${await r.text()}`);
+    // la porta 53 viene bloccata dai browser: la togliamo
+    ice = (await r.json()).iceServers.map(s => ({ ...s, urls: [].concat(s.urls).filter(u => !/:53\b/.test(u)) }));
+    iceAt = Date.now();
+  } catch (e) { console.error('TURN Cloudflare non disponibile:', e.message); }
+  return ice;
+}
+iceServers().then(s => console.log(s ? 'TURN Cloudflare attivo' : 'TURN non configurato: solo connessioni dirette (STUN)'));
+
 const online = new Map(); // nome -> ws
 const voice = new Map();  // nome -> canale vocale
 const send = (ws, m) => ws.readyState === 1 && ws.send(JSON.stringify(m));
@@ -74,8 +97,10 @@ wss.on('connection', ws => {
       online.get(me)?.close(); // stesso utente da un altro client: vince l'ultimo
       voice.delete(me);
       online.set(me, ws);
-      send(ws, { t: 'ready', user: me, token, channels: channelList(), invite });
-      return broadcastState();
+      return iceServers().then(ice => {
+        send(ws, { t: 'ready', user: me, token, channels: channelList(), invite, ice });
+        broadcastState();
+      });
     }
 
     switch (m.t) {
