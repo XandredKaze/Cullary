@@ -9,44 +9,44 @@ App desktop per Windows in stile Discord: account, canali con chat e chiamate (2
 
 L'audio per singola applicazione usa le API WASAPI *process loopback* (Windows 10 2004 o successivo).
 
+## Per gli amici
+
+Installano `Cullary-Setup.exe`, aprono Cullary e scelgono **Registrati**. Non serve configurare nulla: il server è sempre online su Cloudflare.
+
+L'installer non è firmato, quindi Windows SmartScreen mostra un avviso: si apre con "Ulteriori informazioni" → "Esegui comunque".
+
 ## Struttura
 
 | Cartella | Cosa contiene |
 |---|---|
-| `server/` | Server Node (WebSocket + SQLite): account, canali, chat, signaling WebRTC |
+| `server/` | Cloudflare Worker + Durable Object (SQLite): account, canali, chat, signaling WebRTC, credenziali TURN |
 | `app/` | Client Electron: interfaccia e WebRTC peer-to-peer |
 | `native/` | `apploopback.exe`, un helper C++ che cattura l'audio di un processo |
 
-## Avvio
+Il server pubblicato è `wss://cullary.cullary-server.workers.dev` ed è scritto nell'app in `app/renderer.js`.
 
-Requisiti: Node 22.13 o superiore e Visual Studio con gli strumenti C++ (serve solo per compilare l'helper).
+## Sviluppo
 
-```bash
-cd server && npm install && npm start
-```
+Requisiti: Node 22 o superiore e Visual Studio con gli strumenti C++ (serve solo per compilare l'helper).
 
 ```bash
 native\build.bat
 ```
 
 ```bash
+cd server && npm install && npm run dev
+```
+
+```bash
 cd app && npm install && npm start
 ```
 
-Al primo avvio scegli **Registrati**. Il server di default è `ws://localhost:3000`.
+Per far usare all'app il server locale, nella console di DevTools (Ctrl+Shift+I) esegui `localStorage.devServer = 'ws://localhost:8787'` e ricarica. Per tornare al server vero, cancella la chiave.
 
-## Invitare gli amici
+## Pubblicare
 
-1. Metti [`cloudflared.exe`](https://github.com/cloudflare/cloudflared/releases) in `server\bin\`. Il server avvia da solo un tunnel Cloudflare gratuito e cifrato: non serve né account né configurare il router.
-2. Con `npm start` il server stampa il **codice invito** (`wss://….trycloudflare.com`) e lo copia negli appunti. Nell'app puoi copiarlo anche con **📨 Invita amici**.
-3. Crea l'eseguibile da mandare agli amici con `cd app && npm run dist`, che produce `app\dist\Cullary.exe`, portatile e senza installazione.
-4. Gli amici aprono `Cullary.exe`, incollano il codice nel campo "Server" e scelgono **Registrati**.
-
-Il codice cambia a ogni riavvio del server, quindi dopo un riavvio va rimandato. Se vuoi un indirizzo fisso, serve un dominio tuo con un tunnel Cloudflare "named".
-
-`Cullary.exe` non è firmato, quindi Windows SmartScreen mostra un avviso: si apre con "Ulteriori informazioni" → "Esegui comunque".
-
-Con `TUNNEL=0` il server resta raggiungibile solo in rete locale.
+- Server: `cd server && npm run deploy`. La prima volta serve `npx wrangler login`.
+- Installer: `cd app && npm run dist`, che produce `app\dist\Cullary-Setup.exe`.
 
 ## TURN (per chi non riesce a collegarsi direttamente)
 
@@ -58,6 +58,7 @@ Le chiamate sono peer-to-peer. Su alcune reti (NAT simmetrici, rete mobile, reti
    TURN_KEY_ID=<Turn Token ID>
    TURN_KEY_API_TOKEN=<API Token>
    ```
-3. Avvia il server con `npm start`: deve comparire `TURN Cloudflare attivo`.
+   `npm run dev` lo legge in automatico.
+3. Carica le chiavi sul Worker pubblicato con `cd server && npx wrangler secret bulk .env`.
 
 Senza chiavi il server funziona lo stesso, ma solo con connessioni dirette (STUN).

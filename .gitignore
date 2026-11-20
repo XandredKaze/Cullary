@@ -6,3 +6,4 @@ native/*.obj
 server/bin/
 app/dist/
 server/.env
+server/.wrangler/

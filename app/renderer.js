@@ -2,7 +2,8 @@ const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
 let ICE = [{ urls: 'stun:stun.l.google.com:19302' }]; // sostituito dai server TURN che manda il server
 
-let invite = null;
+// indirizzo fisso del server su Cloudflare (devServer: solo per i test in locale)
+const SERVER = localStorage.devServer || 'wss://cullary.cullary-server.workers.dev';
 let ws, me = null, current = null, myVoice = null, channels = [], voice = {}, online = [];
 const peers = new Map();   // nome -> { pc, polite, makingOffer, ignoreOffer, senders }
 const tiles = new Map();   // stream.id -> elemento
@@ -13,7 +14,7 @@ const unread = new Set();
 // ---------- connessione e login ----------
 function connect(first) {
   ws?.close();
-  const sock = ws = new WebSocket(localStorage.server);
+  const sock = ws = new WebSocket(SERVER);
   sock.onopen = () => send(first);
   sock.onmessage = e => handle(JSON.parse(e.data));
   sock.onerror = () => !me && ($('#login-error').textContent = 'Server non raggiungibile');
@@ -32,25 +33,12 @@ function status(text) {
   status.t = setTimeout(() => ($('#status').textContent = ''), 6000);
 }
 
-// accetta il codice invito (wss://…), un link https://… o un host nudo
-function serverUrl(v) {
-  v = v.trim().replace(/\/+$/, '').replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
-  return /^wss?:\/\//.test(v) ? v : (/^(localhost|127\.|192\.168\.|10\.)/.test(v) ? 'ws://' : 'wss://') + v;
-}
-$('#invite').onclick = async () => {
-  if (!invite) return status('Il server non ha un tunnel attivo: gli amici non possono raggiungerlo da internet');
-  await navigator.clipboard.writeText(invite);
-  status('Codice invito copiato: mandalo ai tuoi amici insieme a Cullary.exe');
-};
-$('#server').value = localStorage.server || 'ws://localhost:3000';
 $('#login').onsubmit = e => {
   e.preventDefault();
-  localStorage.server = serverUrl($('#server').value);
-  $('#server').value = localStorage.server;
   connect({ t: e.submitter?.value || 'login', user: $('#user').value.trim(), pass: $('#pass').value });
 };
 $('#logout').onclick = () => { send({ t: 'logout', token: localStorage.token }); delete localStorage.token; location.reload(); };
-if (localStorage.token && localStorage.server) connect({ t: 'auth', token: localStorage.token });
+if (localStorage.token) connect({ t: 'auth', token: localStorage.token });
 
 function handle(m) {
   switch (m.t) {
@@ -59,12 +47,11 @@ function handle(m) {
       else status(m.text);
       break;
     case 'ready':
-      me = m.user; localStorage.token = m.token; channels = m.channels; invite = m.invite; if (m.ice) ICE = m.ice;
+      me = m.user; localStorage.token = m.token; channels = m.channels; if (m.ice) ICE = m.ice;
       $('#login').hidden = true; $('#app').hidden = false; $('#me').textContent = me;
       select(channels.includes(current) ? current : channels[0]);
       break;
     case 'channels': channels = m.channels; renderChannels(); break;
-    case 'invite': invite = m.invite; break;
     case 'state': voice = m.voice; online = m.online; renderChannels(); syncPeers(); break;
     case 'history':
       if (m.channel !== current) break;
