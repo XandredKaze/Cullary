@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="it">
+<html lang="it" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; connect-src ws: wss:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; connect-src ws: wss:">
 <title>Cullary</title>
 <link rel="stylesheet" href="style.css">
 </head>
@@ -11,32 +11,49 @@
   <h1>Cullary</h1>
   <label>Utente <input id="user" required autocomplete="username"></label>
   <label>Password <input id="pass" type="password" required autocomplete="current-password"></label>
-  <p id="login-error"></p>
-  <div><button value="login">Accedi</button><button value="register">Registrati</button></div>
+  <p id="login-error" role="alert"></p>
+  <div><button value="login" class="primary">Accedi</button><button value="register">Registrati</button></div>
 </form>
 
 <div id="app" hidden>
   <aside>
     <h2>Canali</h2>
     <ul id="channels"></ul>
-    <input id="new-channel" placeholder="+ nuovo canale" maxlength="24">
+    <input id="new-channel" placeholder="+ nuovo canale" maxlength="24" aria-label="Nome del nuovo canale">
     <h2>Online</h2>
     <ul id="online"></ul>
-    <footer><b id="me"></b><button id="logout" title="Disconnetti">⏻</button></footer>
+    <footer id="me-panel">
+      <span id="me-avatar"></span>
+      <div class="who"><b id="me-nick"></b><small id="me-name"></small></div>
+      <button id="open-settings" title="Impostazioni (Ctrl+,)" aria-label="Impostazioni">⚙</button>
+    </footer>
   </aside>
+
   <main>
-    <header><h3 id="chan-title"></h3><span id="status"></span></header>
-    <section id="stage"></section>
-    <nav id="controls">
-      <button id="mic">🎙 Microfono</button>
-      <button id="cam">📷 Webcam</button>
-      <button id="screen">🖥 Schermo</button>
-      <button id="app-share">🪟 App (video + audio)</button>
-      <button id="audio">🔈 Solo audio app</button>
-      <button id="leave">📞 Esci</button>
-    </nav>
-    <ul id="messages"></ul>
-    <form id="chat"><input id="text" placeholder="Scrivi un messaggio…" maxlength="2000" autocomplete="off"></form>
+    <header>
+      <h3 id="chan-title"></h3>
+      <span id="status" role="status"></span>
+      <button id="toggle-chat" title="Mostra/nascondi chat (Ctrl+Shift+C)" aria-pressed="true">💬 <span class="txt">Chat</span></button>
+    </header>
+    <div id="content">
+      <section id="call" aria-label="Chiamata">
+        <div id="stage"></div>
+        <nav id="controls" aria-label="Controlli chiamata">
+          <button id="mic" title="Microfono (Ctrl+Shift+M)">🎙 <span class="txt">Microfono</span></button>
+          <button id="deafen" title="Silenzia tutto l'audio (Ctrl+Shift+D)">🎧 <span class="txt">Audio</span></button>
+          <button id="cam" title="Webcam">📷 <span class="txt">Webcam</span></button>
+          <button id="screen" title="Condividi lo schermo con l'audio di sistema">🖥 <span class="txt">Schermo</span></button>
+          <button id="app-share" title="Condividi una finestra con il suo audio">🪟 <span class="txt">App</span></button>
+          <button id="audio" title="Condividi solo l'audio di un'applicazione">🔈 <span class="txt">Solo audio app</span></button>
+          <button id="call-fullscreen" title="Chiamata a schermo intero">⛶ <span class="txt">Schermo intero</span></button>
+          <button id="leave" class="danger" title="Esci dalla chiamata">📞 <span class="txt">Esci</span></button>
+        </nav>
+      </section>
+      <section id="chat-col" aria-label="Chat">
+        <ul id="messages"></ul>
+        <form id="chat"><input id="text" placeholder="Scrivi un messaggio…" maxlength="2000" autocomplete="off" aria-label="Messaggio"></form>
+      </section>
+    </div>
   </main>
 </div>
 
@@ -45,6 +62,74 @@
   <div id="picker-grid"></div>
   <form method="dialog"><button>Annulla</button></form>
 </dialog>
+
+<dialog id="settings" aria-label="Impostazioni">
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="profile">👤 Profilo</button>
+    <button role="tab" data-tab="devices">🎧 Audio e video</button>
+    <button role="tab" data-tab="look">🎨 Aspetto</button>
+    <button id="logout" class="danger">⏻ Esci dall'account</button>
+  </nav>
+
+  <div class="panes">
+    <section data-pane="profile">
+      <h3>Profilo</h3>
+      <div class="preview"><span id="pf-preview"></span><div><b id="pf-preview-nick"></b><small id="pf-preview-name"></small></div></div>
+      <label>Soprannome <input id="pf-nick" maxlength="32" placeholder="Come ti vedono gli altri"></label>
+      <div class="row">
+        <label class="file">🖼 Scegli immagine…<input id="pf-avatar" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></label>
+        <button id="pf-avatar-remove" type="button">Rimuovi immagine</button>
+      </div>
+      <div class="row">
+        <label>Colore del contorno <input id="pf-border" type="color"></label>
+        <label>Stile del contorno
+          <select id="pf-border-style">
+            <option value="none">Nessuno</option>
+            <option value="solid">Pieno</option>
+            <option value="glow">Luminoso</option>
+            <option value="double">Doppio</option>
+          </select>
+        </label>
+      </div>
+      <button id="pf-save" class="primary">Salva profilo</button>
+    </section>
+
+    <section data-pane="devices" hidden>
+      <h3>Audio e video</h3>
+      <label>🎙 Microfono <select id="dev-mic"></select></label>
+      <div class="meter" title="Parla per vedere il livello del microfono"><div id="mic-meter"></div></div>
+      <label>Volume microfono <span class="row"><input id="mic-gain" type="range" min="0" max="200" step="5"><output id="mic-gain-out"></output></span></label>
+      <label class="check"><input type="checkbox" id="opt-ns"> Riduzione del rumore</label>
+      <label class="check"><input type="checkbox" id="opt-ec"> Cancellazione dell'eco</label>
+      <label class="check"><input type="checkbox" id="opt-agc"> Regolazione automatica del volume</label>
+      <hr>
+      <label>🔊 Uscita audio (cuffie / altoparlanti) <select id="dev-out"></select></label>
+      <button id="test-out" type="button">🔔 Prova suono</button>
+      <hr>
+      <label>📷 Webcam <select id="dev-cam"></select></label>
+      <button id="cam-test" type="button">📷 Prova webcam</button>
+      <video id="cam-preview" muted playsinline autoplay hidden></video>
+      <p class="hint">Le scelte vengono salvate e riusate a ogni avvio. Se un dispositivo viene scollegato, Cullary usa quello predefinito di Windows.</p>
+    </section>
+
+    <section data-pane="look" hidden>
+      <h3>Aspetto</h3>
+      <label>Tema
+        <select id="theme">
+          <option value="dark">Scuro</option>
+          <option value="light">Chiaro</option>
+          <option value="black">Nero (OLED)</option>
+        </select>
+      </label>
+      <label>Colore principale <input type="color" id="accent"></label>
+      <label>Dimensione del testo <span class="row"><input type="range" id="font-size" min="12" max="20"><output id="font-size-out"></output></span></label>
+      <p class="hint">Scorciatoie: Ctrl+Shift+M microfono · Ctrl+Shift+D silenzia audio · Ctrl+Shift+C chat · Ctrl+, impostazioni · doppio clic su un riquadro per lo schermo intero.</p>
+    </section>
+    <p id="settings-msg" role="status"></p>
+  </div>
+  <form method="dialog" class="close"><button aria-label="Chiudi impostazioni">✕</button></form>
+</dialog>
+
 <script src="renderer.js"></script>
 </body>
 </html>

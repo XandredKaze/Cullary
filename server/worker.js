@@ -30,6 +30,8 @@ export class Hub extends DurableObject {
       CREATE TABLE IF NOT EXISTS channels(name TEXT PRIMARY KEY COLLATE NOCASE);
       CREATE TABLE IF NOT EXISTS messages(id INTEGER PRIMARY KEY, channel TEXT, user TEXT, text TEXT, ts INTEGER);
       INSERT OR IGNORE INTO channels VALUES('generale');`);
+    // profilo (aggiunto dopo): colonne create al primo avvio, l'errore significa che esistono già
+    for (const col of ['nick', 'avatar', 'border']) try { this.sql.exec(`ALTER TABLE users ADD COLUMN ${col} TEXT`); } catch {}
   }
 
   fetch() {
@@ -51,6 +53,11 @@ export class Hub extends DurableObject {
     this.broadcast({ t: 'state', online: all.map(s => s.name), voice: Object.fromEntries(all.filter(s => s.voice).map(s => [s.name, s.voice])) });
   }
   row(q, ...args) { return this.sql.exec(q, ...args).toArray()[0]; }
+  // ponytail: manda tutti i profili a ogni login (avatar ~10 KB l'uno), va bene per un gruppo di amici
+  profiles() {
+    return Object.fromEntries(this.sql.exec('SELECT name, nick, avatar, border FROM users').toArray()
+      .map(r => [r.name, { nick: r.nick, avatar: r.avatar, border: r.border }]));
+  }
   channelList() { return this.sql.exec('SELECT name FROM channels ORDER BY name').toArray().map(r => r.name); }
 
   async login(m) {
@@ -65,7 +72,7 @@ export class Hub extends DurableObject {
       if (pass.length < 6) throw 'Password di almeno 6 caratteri';
       if (this.row('SELECT name FROM users WHERE name = ?', name)) throw 'Nome già in uso';
       const salt = randHex(16);
-      this.sql.exec('INSERT INTO users VALUES (?, ?, ?)', name, await hash(pass, salt), salt);
+      this.sql.exec('INSERT INTO users (name, hash, salt) VALUES (?, ?, ?)', name, await hash(pass, salt), salt);
       return name;
     }
     if (m.t === 'login') {
@@ -110,7 +117,7 @@ export class Hub extends DurableObject {
       for (const s of this.sockets()) if (s.name === name) { this.patch(s.ws, { name: null, voice: null }); s.ws.close(4000, 'Accesso da un altro dispositivo'); }
       const ice = await this.ice();
       ws.serializeAttachment({ name });
-      this.send(ws, { t: 'ready', user: name, token, channels: this.channelList(), ice });
+      this.send(ws, { t: 'ready', user: name, token, channels: this.channelList(), profiles: this.profiles(), ice });
       return this.state();
     }
 
@@ -141,6 +148,13 @@ export class Hub extends DurableObject {
         if (!c) return;
         this.patch(ws, { voice: c.name });
         return this.state();
+      }
+      case 'profile': {
+        const nick = String(m.nick ?? '').replace(/\p{C}/gu, '').trim().slice(0, 32) || null;
+        const avatar = typeof m.avatar === 'string' && m.avatar.length <= 100_000 && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(m.avatar) ? m.avatar : null;
+        const border = /^#[0-9a-f]{6}\|(none|solid|glow|double)$/i.test(m.border) ? m.border : null;
+        this.sql.exec('UPDATE users SET nick = ?, avatar = ?, border = ? WHERE name = ?', nick, avatar, border, me);
+        return this.broadcast({ t: 'profile', user: me, profile: { nick, avatar, border } });
       }
       case 'leave_voice':
         this.patch(ws, { voice: null });
