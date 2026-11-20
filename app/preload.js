@@ -6,4 +6,6 @@ contextBridge.exposeInMainWorld('native', {
   audioStart: (mode, target) => ipcRenderer.invoke('audio-start', mode, target),
   audioStop: id => ipcRenderer.invoke('audio-stop', id),
   onPcm: cb => ipcRenderer.on('pcm', (_e, id, data) => cb(id, data)),
+  onRemote: cb => ipcRenderer.on('remote', (_e, cmd) => cb(cmd)),
+  remoteState: s => ipcRenderer.send('remote-state', s),
 });

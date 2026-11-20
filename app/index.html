@@ -7,55 +7,77 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<form id="login">
-  <h1>Cullary</h1>
+<form id="login" class="panel">
+  <div class="brand"><span class="logo"><i data-icon="logo"></i></span><h1>Cullary</h1></div>
   <label>Utente <input id="user" required autocomplete="username"></label>
   <label>Password <input id="pass" type="password" required autocomplete="current-password"></label>
+  <label>Parola d'Ordine <input id="word" type="password" required autocomplete="off" placeholder="Chiedila a chi ti ha invitato"></label>
   <p id="login-error" role="alert"></p>
   <div><button value="login" class="primary">Accedi</button><button value="register">Registrati</button></div>
 </form>
 
 <div id="app" hidden>
-  <aside>
-    <h2>Canali</h2>
+  <aside class="panel">
+    <div class="brand">
+      <span class="logo"><i data-icon="logo"></i></span>
+      <div><b>Cullary</b><small id="brand-sub"></small></div>
+    </div>
+    <label class="search"><i data-icon="search"></i><input id="search" type="search" placeholder="Cerca canali o persone" aria-label="Cerca canali o persone"></label>
+
+    <div class="section-head"><h2>Canali vocali</h2><button id="add-channel" class="icon-btn" title="Nuovo canale" aria-label="Nuovo canale"><i data-icon="plus"></i></button></div>
     <ul id="channels"></ul>
-    <input id="new-channel" placeholder="+ nuovo canale" maxlength="24" aria-label="Nome del nuovo canale">
-    <h2>Online</h2>
+    <input id="new-channel" placeholder="+  Nuovo canale" maxlength="24" aria-label="Nome del nuovo canale (Invio per creare)">
+
+    <h2 id="online-head">Online</h2>
     <ul id="online"></ul>
+
     <footer id="me-panel">
-      <span id="me-avatar"></span>
+      <span id="me-avatar" class="dot-wrap"></span>
       <div class="who"><b id="me-nick"></b><small id="me-name"></small></div>
-      <button id="open-settings" title="Impostazioni (Ctrl+,)" aria-label="Impostazioni">⚙</button>
+      <button id="open-settings" class="icon-btn" title="Impostazioni (Ctrl+,)" aria-label="Impostazioni"><i data-icon="settings"></i></button>
     </footer>
   </aside>
 
-  <main>
+  <main class="panel">
     <header>
-      <h3 id="chan-title"></h3>
-      <span id="status" role="status"></span>
-      <button id="toggle-chat" title="Mostra/nascondi chat (Ctrl+Shift+C)" aria-pressed="true">💬 <span class="txt">Chat</span></button>
+      <h3><span class="hash">#</span> <span id="call-title"></span></h3>
+      <span id="call-info" class="pill"></span>
+      <span class="spacer"></span>
+      <button id="toggle-chat" class="primary" title="Mostra/nascondi chat (Ctrl+Shift+C)" aria-pressed="true"><i data-icon="message"></i><span class="txt">Chat</span></button>
     </header>
-    <div id="content">
-      <section id="call" aria-label="Chiamata">
-        <div id="stage"></div>
-        <nav id="controls" aria-label="Controlli chiamata">
-          <button id="mic" title="Microfono (Ctrl+Shift+M)">🎙 <span class="txt">Microfono</span></button>
-          <button id="deafen" title="Silenzia tutto l'audio (Ctrl+Shift+D)">🎧 <span class="txt">Audio</span></button>
-          <button id="cam" title="Webcam">📷 <span class="txt">Webcam</span></button>
-          <button id="screen" title="Condividi lo schermo con l'audio di sistema">🖥 <span class="txt">Schermo</span></button>
-          <button id="app-share" title="Condividi una finestra con il suo audio">🪟 <span class="txt">App</span></button>
-          <button id="audio" title="Condividi solo l'audio di un'applicazione">🔈 <span class="txt">Solo audio app</span></button>
-          <button id="call-fullscreen" title="Chiamata a schermo intero">⛶ <span class="txt">Schermo intero</span></button>
-          <button id="leave" class="danger" title="Esci dalla chiamata">📞 <span class="txt">Esci</span></button>
-        </nav>
-      </section>
-      <section id="chat-col" aria-label="Chat">
-        <ul id="messages"></ul>
-        <form id="chat"><input id="text" placeholder="Scrivi un messaggio…" maxlength="2000" autocomplete="off" aria-label="Messaggio"></form>
-      </section>
-    </div>
+    <section id="call" aria-label="Chiamata">
+      <div id="stage"></div>
+      <nav id="controls" aria-label="Controlli chiamata">
+        <button id="mic" title="Microfono (Ctrl+Shift+M)"><i data-icon="mic"></i><span class="txt">Microfono</span></button>
+        <button id="deafen" title="Silenzia tutto l'audio (Ctrl+Shift+D)"><i data-icon="headphones"></i><span class="txt">Audio</span></button>
+        <button id="cam" title="Webcam"><i data-icon="video"></i><span class="txt">Webcam</span></button>
+        <span class="sep"></span>
+        <button id="screen" title="Condividi lo schermo con l'audio di sistema"><i data-icon="monitor"></i><span class="txt">Schermo</span></button>
+        <button id="app-share" title="Condividi una finestra con il suo audio"><i data-icon="window"></i><span class="txt">App</span></button>
+        <button id="audio" title="Condividi solo l'audio di un'applicazione"><i data-icon="volume"></i><span class="txt">Solo audio app</span></button>
+        <button id="call-fullscreen" title="Chiamata a schermo intero" aria-label="Chiamata a schermo intero"><i data-icon="maximize"></i></button>
+        <span class="sep"></span>
+        <button id="leave" class="danger" title="Esci dalla chiamata"><i data-icon="hangup"></i><span class="txt">Esci</span></button>
+      </nav>
+    </section>
   </main>
+
+  <section id="chat-col" class="panel" aria-label="Chat">
+    <header>
+      <h3 id="chat-title"></h3>
+      <span class="spacer"></span>
+      <button id="join-current" class="primary"><i data-icon="volume"></i><span class="txt">Entra in chiamata</span></button>
+      <button id="close-chat" class="icon-btn" title="Nascondi chat (Ctrl+Shift+C)" aria-label="Nascondi chat"><i data-icon="x"></i></button>
+    </header>
+    <ul id="messages"></ul>
+    <form id="chat">
+      <input id="text" placeholder="Scrivi un messaggio…" maxlength="2000" autocomplete="off" aria-label="Messaggio">
+      <button class="primary icon-btn" aria-label="Invia"><i data-icon="send"></i></button>
+    </form>
+  </section>
 </div>
+
+<span id="status" role="status"></span>
 
 <dialog id="picker">
   <h3>Scegli cosa condividere</h3>

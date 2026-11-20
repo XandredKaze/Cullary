@@ -1,0 +1,56 @@
+{
+  "Name": "Cullary",
+  "Author": "XandredKaze",
+  "Description": "Controlla le chiamate di Cullary: microfono, audio, webcam, condivisione e uscita.",
+  "Version": "1.0.0",
+  "SDKVersion": 1,
+  "Icon": "images/plugin.png",
+  "Category": "Cullary",
+  "CategoryIcon": "images/plugin.png",
+  "CodePathWin": "plugin/index.js",
+  "Nodejs": { "Version": "20" },
+  "OS": [{ "Platform": "windows", "MinimumVersion": "10" }],
+  "Software": { "MinimumVersion": "3.10.188.226" },
+  "Actions": [
+    {
+      "UUID": "com.cullary.streamdock.mic", "Name": "Microfono", "Tooltip": "Silenzia / riattiva il microfono",
+      "Icon": "images/mic.png", "DisableAutomaticStates": true, "SupportedInMultiActions": true,
+      "States": [{ "Image": "images/mic.png" }, { "Image": "images/mic-on.png" }]
+    },
+    {
+      "UUID": "com.cullary.streamdock.deafen", "Name": "Disattiva audio", "Tooltip": "Non sentire gli altri",
+      "Icon": "images/deafen.png", "DisableAutomaticStates": true, "SupportedInMultiActions": true,
+      "States": [{ "Image": "images/deafen.png" }, { "Image": "images/deafen-on.png" }]
+    },
+    {
+      "UUID": "com.cullary.streamdock.cam", "Name": "Webcam", "Tooltip": "Accendi / spegni la webcam",
+      "Icon": "images/cam.png", "DisableAutomaticStates": true, "SupportedInMultiActions": true,
+      "States": [{ "Image": "images/cam.png" }, { "Image": "images/cam-on.png" }]
+    },
+    {
+      "UUID": "com.cullary.streamdock.screen", "Name": "Condividi schermo", "Tooltip": "Schermo con audio di sistema",
+      "Icon": "images/screen.png", "DisableAutomaticStates": true, "SupportedInMultiActions": true,
+      "States": [{ "Image": "images/screen.png" }, { "Image": "images/screen-on.png" }]
+    },
+    {
+      "UUID": "com.cullary.streamdock.app", "Name": "Condividi app", "Tooltip": "Una finestra con il suo audio",
+      "Icon": "images/app.png", "DisableAutomaticStates": true, "SupportedInMultiActions": true,
+      "States": [{ "Image": "images/app.png" }, { "Image": "images/app-on.png" }]
+    },
+    {
+      "UUID": "com.cullary.streamdock.audio", "Name": "Solo audio app", "Tooltip": "Solo l'audio di un'applicazione",
+      "Icon": "images/audio.png", "DisableAutomaticStates": true, "SupportedInMultiActions": true,
+      "States": [{ "Image": "images/audio.png" }, { "Image": "images/audio-on.png" }]
+    },
+    {
+      "UUID": "com.cullary.streamdock.chat", "Name": "Chat", "Tooltip": "Mostra / nascondi la chat",
+      "Icon": "images/chat.png", "SupportedInMultiActions": true,
+      "States": [{ "Image": "images/chat.png" }]
+    },
+    {
+      "UUID": "com.cullary.streamdock.leave", "Name": "Esci dalla chiamata", "Tooltip": "Esci dalla chiamata",
+      "Icon": "images/leave.png", "SupportedInMultiActions": true,
+      "States": [{ "Image": "images/leave.png" }]
+    }
+  ]
+}

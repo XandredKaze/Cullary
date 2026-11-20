@@ -1,6 +1,31 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
+// icone a linea (24x24, colore del testo)
+const ICON = Object.fromEntries(Object.entries({
+  logo: '<path d="M17.5 7.5a7 7 0 1 0 0 9"/><circle cx="12" cy="12" r="1.6"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  settings: '<circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+  message: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>',
+  mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4"/>',
+  micOff: '<path d="M2 2l20 20M15 9.3V5a3 3 0 0 0-5.9-.7M9 9v2a3 3 0 0 0 5.1 2.1M17 16.9A7 7 0 0 1 5 11v-1M19 10v1a7 7 0 0 1-.4 2.3M12 18v4"/>',
+  headphones: '<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>',
+  headphonesOff: '<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3M2 2l20 20"/>',
+  video: '<path d="M16 13l5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+  monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  window: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9h20"/>',
+  volume: '<path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/>',
+  volumeX: '<path d="M11 5L6 9H2v6h4l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/>',
+  maximize: '<path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/>',
+  hangup: '<path d="M2.5 14.5c5.2-4.6 13.8-4.6 19 0l-2.4 2.8-3.6-1.3v-2.6a12 12 0 0 0-7 0V16l-3.6 1.3z"/>',
+  x: '<path d="M18 6L6 18M6 6l12 12"/>',
+  send: '<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>',
+  wave: '<path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/>',
+}).map(([k, v]) => [k, `<svg viewBox="0 0 24 24" aria-hidden="true">${v}</svg>`]));
+const icon = name => { const i = el('i', { innerHTML: ICON[name] }); i.dataset.icon = name; return i; };
+document.querySelectorAll('[data-icon]').forEach(i => (i.innerHTML = ICON[i.dataset.icon]));
+
 let ICE = [{ urls: 'stun:stun.l.google.com:19302' }]; // sostituito dai server TURN che manda il server
 
 // indirizzo fisso del server su Cloudflare (devServer: solo per i test in locale)
@@ -16,8 +41,9 @@ let deafened = false, chatUnseen = 0;
 
 // ---------- preferenze salvate su questo PC ----------
 const prefs = Object.assign(
-  { mic: null, out: null, cam: null, ns: true, ec: true, agc: true, micGain: 100, theme: 'dark', accent: '#5865f2', fontSize: 15, chatOpen: true, volumes: {} },
+  { mic: null, out: null, cam: null, ns: true, ec: true, agc: true, micGain: 100, theme: 'dark', accent: '#b49cff', fontSize: 15, chatOpen: true, volumes: {} },
   (() => { try { return JSON.parse(localStorage.prefs || '{}'); } catch { return {}; } })());
+if (prefs.accent === '#5865f2') prefs.accent = '#b49cff'; // vecchio colore predefinito -> quello della nuova interfaccia
 const savePrefs = () => (localStorage.prefs = JSON.stringify(prefs));
 
 // ---------- connessione e login ----------
@@ -44,7 +70,7 @@ function status(text) {
 
 $('#login').onsubmit = e => {
   e.preventDefault();
-  connect({ t: e.submitter?.value || 'login', user: $('#user').value.trim(), pass: $('#pass').value });
+  connect({ t: e.submitter?.value || 'login', user: $('#user').value.trim(), pass: $('#pass').value, word: $('#word').value });
 };
 $('#logout').onclick = () => { send({ t: 'logout', token: localStorage.token }); delete localStorage.token; location.reload(); };
 if (localStorage.token) connect({ t: 'auth', token: localStorage.token });
@@ -91,7 +117,13 @@ function avatar(u, size = '') {
   else { a.textContent = displayName(u).slice(0, 1).toUpperCase(); a.style.background = hue(u); }
   return a;
 }
-const person = (u, size = 'small') => el('div', { className: 'person' }, avatar(u, size), el('span', { textContent: displayName(u) }));
+const person = (u, size = 'small', dot = false) => {
+  const a = avatar(u, size);
+  const n = el('div', { className: 'person' }, dot ? el('span', { className: 'dot-wrap' }, a) : a, el('span', { textContent: displayName(u) }));
+  n.dataset.user = u;
+  if (!dot) n.append(Object.assign(icon('wave'), { className: 'wave' }));
+  return n;
+};
 
 function renderMe() {
   $('#me-avatar').replaceChildren(avatar(me));
@@ -105,21 +137,32 @@ function refreshNames() {
 
 // ---------- canali e chat ----------
 function renderChannels() {
-  $('#channels').replaceChildren(...channels.map(c => {
-    const inCall = myVoice === c;
-    const li = el('li', { className: c === current ? 'active' : unread.has(c) ? 'unread' : '' },
-      el('span', { textContent: '# ' + c, onclick: () => select(c) }),
-      el('button', { textContent: inCall ? '✕' : '🔊', title: inCall ? 'Esci dalla chiamata' : 'Entra in chiamata', ariaLabel: (inCall ? 'Esci dalla chiamata ' : 'Entra in chiamata ') + c, onclick: () => inCall ? leaveVoice() : joinVoice(c) }));
-    const members = Object.keys(voice).filter(u => voice[u] === c);
-    if (members.length) li.append(el('div', { className: 'members' }, ...members.map(u => person(u))));
+  const q = $('#search').value.trim().toLowerCase();
+  const match = u => !q || u.toLowerCase().includes(q) || displayName(u).toLowerCase().includes(q);
+  const membersOf = c => Object.keys(voice).filter(u => voice[u] === c);
+  $('#channels').replaceChildren(...channels.filter(c => !q || c.toLowerCase().includes(q) || membersOf(c).some(match)).map(c => {
+    const inCall = myVoice === c, members = membersOf(c);
+    const li = el('li', { className: `chan ${c === current ? 'active' : ''} ${unread.has(c) ? 'unread' : ''}` },
+      el('div', { className: 'chan-row' },
+        el('button', { className: 'chan-name', title: 'Apri la chat di ' + c, onclick: () => select(c) }, icon('volume'), c),
+        ...(members.length ? [el('span', { className: 'badge', textContent: 'LIVE' })] : []),
+        el('button', { className: 'chan-join' + (inCall ? ' leave' : ''), textContent: inCall ? 'Esci' : 'Entra', ariaLabel: (inCall ? 'Esci dalla chiamata ' : 'Entra in chiamata ') + c, onclick: () => inCall ? leaveVoice() : joinVoice(c) })));
+    if (members.length) li.append(el('div', { className: 'members' }, ...members.map(u => person(u, 'small'))));
     return li;
   }));
-  $('#online').replaceChildren(...online.map(u => el('li', {}, person(u))));
+  const shown = online.filter(match);
+  $('#online-head').textContent = `Online — ${online.length}`;
+  $('#online').replaceChildren(...shown.map(u => el('li', {}, person(u, '', true))));
+  $('#brand-sub').textContent = `${online.length} online · ${channels.length} ${channels.length === 1 ? 'canale' : 'canali'}`;
+  const n = myVoice ? membersOf(myVoice).length : 0;
+  $('#call-info').textContent = myVoice ? `In chiamata · ${n} ${n === 1 ? 'partecipante' : 'partecipanti'}` : '';
 }
+$('#search').oninput = () => renderChannels();
+$('#add-channel').onclick = () => $('#new-channel').focus();
 
 function select(c) {
   current = c; unread.delete(c); msgs = [];
-  $('#chan-title').textContent = '# ' + c;
+  $('#chat-title').textContent = 'Chat · #' + c;
   renderMessages();
   send({ t: 'history', channel: c });
   renderChannels();
@@ -161,6 +204,8 @@ function setChat(open) {
   layout();
 }
 $('#toggle-chat').onclick = () => setChat(!prefs.chatOpen);
+$('#close-chat').onclick = () => setChat(false);
+$('#join-current').onclick = () => current && joinVoice(current);
 
 // ---------- dispositivi audio/video ----------
 let ctxP;
@@ -215,6 +260,7 @@ async function joinVoice(c) {
   try { await micChain(); } catch { status('Nessun microfono: gli altri non ti sentiranno'); }
   local.mic = mic.dest.stream;
   myVoice = c;
+  $('#call-title').textContent = c;
   document.body.classList.add('in-voice');
   setChat(prefs.chatOpen);
   showStream(me, local.mic, 'mic');
@@ -304,8 +350,8 @@ function showStream(owner, stream, localKey) {
   const video = el('video', { srcObject: stream, autoplay: true, playsInline: true, muted: mine });
   const card = el('div', { className: 'card' });
   const label = el('span', { className: 'label' });
-  const fs = el('button', { className: 'fs', textContent: '⛶', title: 'Schermo intero (doppio clic)', ariaLabel: 'Schermo intero', onclick: e => { e.stopPropagation(); toggleFullscreen(tile); } });
-  const bar = el('div', { className: 'bar' }, label);
+  const fs = el('button', { className: 'fs', title: 'Schermo intero (doppio clic)', ariaLabel: 'Schermo intero', onclick: e => { e.stopPropagation(); toggleFullscreen(tile); } }, icon('maximize'));
+  const bar = el('div', { className: 'bar' }, label, el('span', { className: 'spacer' }));
   const tile = el('div', { className: 'tile', tabIndex: 0 }, video, card, bar);
   Object.assign(tile, { owner, mine, video });
   tile.ondblclick = () => !tile.classList.contains('no-video') && toggleFullscreen(tile);
@@ -325,7 +371,7 @@ function showStream(owner, stream, localKey) {
       const s = state();
       range.value = s.v;
       if (kind() !== 'cam') { video.volume = s.v / 100; video.muted = s.m || deafened; }
-      muteBtn.textContent = s.m || !s.v ? '🔇' : '🔊';
+      muteBtn.replaceChildren(icon(s.m || !s.v ? 'volumeX' : 'volume'));
       range.ariaLabel = `Volume di ${label.textContent}`; range.ariaValueText = s.v + '%';
     };
     range.oninput = () => { state().v = +range.value; state().m = false; savePrefs(); applyVolumes(); };
@@ -339,7 +385,14 @@ function showStream(owner, stream, localKey) {
   tile.refresh = () => {
     if (!stream.getTracks().length) return removeTile(stream.id);
     const k = kind(), name = owner === me ? 'Tu' : displayName(owner);
-    label.textContent = KIND_LABEL[k] ? `${name} · ${KIND_LABEL[k]}` : name;
+    const sub = KIND_LABEL[k] || (owner === me ? displayName(me) : '');
+    label.replaceChildren(avatar(owner, 'small'), el('b', { textContent: name }), ...(sub ? [el('small', { textContent: sub })] : []));
+    if (!tile.an && stream.getAudioTracks().length) audioCtx().then(ac => { // livello audio per l'indicatore "PARLA"
+      if (tile.an) return;
+      if (localKey === 'mic') return (tile.an = mic.an);
+      tile.an = ac.createAnalyser(); tile.an.fftSize = 512;
+      ac.createMediaStreamSource(stream).connect(tile.an);
+    });
     tile.classList.toggle('no-video', !stream.getVideoTracks().length);
     card.replaceChildren(k === 'audio' ? el('span', { className: 'avatar big icon', textContent: '🔈' }) : avatar(owner, 'big'));
     if (vol) vol.hidden = k === 'cam' ? !micTile(owner) : !stream.getAudioTracks().length;
@@ -363,7 +416,7 @@ function layout() {
   for (const t of tiles.values()) if (t.kind() === 'cam' && !t.mine) t.querySelector('.vol').hidden = !micTile(t.owner);
   const stage = $('#stage'), n = [...stage.children].filter(t => !t.hidden).length;
   if (!n || !stage.clientWidth) return;
-  const gap = 8, W = stage.clientWidth - 16, H = stage.clientHeight - 16;
+  const gap = 14, W = stage.clientWidth - 2, H = stage.clientHeight - 30; // come gap e padding in style.css
   let best = 0;
   for (let cols = 1; cols <= n; cols++) {
     const rows = Math.ceil(n / cols);
@@ -372,6 +425,24 @@ function layout() {
   stage.style.setProperty('--tile-w', Math.floor(best) + 'px');
 }
 new ResizeObserver(layout).observe($('#stage'));
+
+// chi sta parlando: bordo verde + "PARLA" sul suo riquadro e onda accanto al nome nella barra laterale
+const lastLoud = new Map(), levelBuf = new Uint8Array(512);
+setInterval(() => {
+  if (!myVoice) return;
+  const now = Date.now();
+  for (const t of tiles.values()) {
+    if (t.kind() !== 'mic' || !t.an) continue;
+    if (t.mine && !local.mic?.getAudioTracks()[0]?.enabled) continue; // microfono spento
+    t.an.getByteTimeDomainData(levelBuf);
+    let peak = 0;
+    for (const v of levelBuf) peak = Math.max(peak, Math.abs(v - 128));
+    if (peak > 8) lastLoud.set(t.owner, now);
+  }
+  const talking = u => now - (lastLoud.get(u) || 0) < 350; // breve "coda" per non farlo lampeggiare tra le parole
+  for (const t of tiles.values()) t.classList.toggle('speaking', ['mic', 'cam'].includes(t.kind()) && talking(t.owner));
+  $$('.members .person').forEach(n => n.classList.toggle('speaking', voice[n.dataset.user] === myVoice && talking(n.dataset.user)));
+}, 120);
 
 // ---------- controlli ----------
 const buttons = { cam: '#cam', screen: '#screen', app: '#app-share', audio: '#audio' };
@@ -395,11 +466,20 @@ function updateButtons() {
   for (const [key, sel] of Object.entries(buttons)) $(sel).classList.toggle('on', !!local[key]);
   const t = local.mic?.getAudioTracks()[0], micOn = !!mic.raw && t?.enabled;
   $('#mic').classList.toggle('off', !micOn);
-  $('#mic').firstChild.textContent = micOn ? '🎙 ' : '🔇 ';
+  $('#mic i').innerHTML = ICON[micOn ? 'mic' : 'micOff'];
+  $('#deafen i').innerHTML = ICON[deafened ? 'headphonesOff' : 'headphones'];
   $('#mic').setAttribute('aria-pressed', !micOn);
   $('#deafen').classList.toggle('off', deafened);
   $('#deafen').setAttribute('aria-pressed', deafened);
+  native.remoteState({ inCall: !!myVoice, mic: !!micOn, deafened, cam: !!local.cam, screen: !!local.screen, app: !!local.app, audio: !!local.audio });
 }
+
+// comandi dal plugin Stream Dock (come le scorciatoie da tastiera: valgono solo in chiamata)
+const REMOTE = {
+  mic: toggleMic, deafen: toggleDeafen, leave: () => leaveVoice(), chat: () => setChat(!prefs.chatOpen),
+  cam: () => share('cam'), screen: () => share('screen'), app: () => share('app'), audio: () => share('audio'),
+};
+native.onRemote(cmd => myVoice && REMOTE[cmd]?.());
 
 document.addEventListener('keydown', e => {
   if (!me || !e.ctrlKey) return;
@@ -697,6 +777,9 @@ function applyLook() {
   const root = document.documentElement;
   root.dataset.theme = prefs.theme;
   root.style.setProperty('--accent', prefs.accent);
+  // testo scuro sui colori chiari, bianco su quelli scuri
+  const [r, g, b] = prefs.accent.match(/\w\w/g).map(h => parseInt(h, 16));
+  root.style.setProperty('--on-accent', r * .299 + g * .587 + b * .114 > 150 ? '#17121f' : '#fff');
   root.style.fontSize = prefs.fontSize + 'px';
 }
 $('#theme').value = prefs.theme;

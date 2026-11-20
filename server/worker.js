@@ -67,6 +67,10 @@ export class Hub extends DurableObject {
       return r.name;
     }
     const name = String(m.user ?? ''), pass = String(m.pass ?? '');
+    // parola d'ordine (segreto ACCESS_WORD del Worker, mai nel codice: il repo è pubblico). Senza segreto non entra nessuno.
+    // Le sessioni già aperte (token) restano valide.
+    const word = this.env.ACCESS_WORD?.trim().toLowerCase();
+    if ((m.t === 'register' || m.t === 'login') && (!word || !sameHash(String(m.word ?? '').trim().toLowerCase(), word))) throw "Parola d'Ordine errata";
     if (m.t === 'register') {
       if (!NAME.test(name)) throw 'Nome: 2-24 caratteri tra lettere, numeri, . _ -';
       if (pass.length < 6) throw 'Password di almeno 6 caratteri';

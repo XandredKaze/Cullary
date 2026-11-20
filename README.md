@@ -48,6 +48,24 @@ Per far usare all'app il server locale, nella console di DevTools (Ctrl+Shift+I)
 - Server: `cd server && npm run deploy`. La prima volta serve `npx wrangler login`.
 - Installer: `cd app && npm run dist`, che produce `app\dist\Cullary-Setup.exe`.
 
+## Plugin Stream Dock (VSD Craft / Mirabox)
+
+`streamdock/com.cullary.streamdock.sdPlugin` aggiunge la categoria **Cullary** in VSD Craft: microfono, disattiva audio, webcam, condividi schermo/app/solo audio, chat ed esci. I tasti si colorano in base allo stato della chiamata.
+
+Cullary apre un server solo su `127.0.0.1:47719` (`app/main.js`, "controllo remoto"): `POST /cmd/<nome>` con header `X-Cullary: 1` esegue un comando, `GET /state` manda lo stato (SSE). I comandi valgono solo in chiamata, come le scorciatoie da tastiera.
+
+Installazione:
+
+```bash
+cd streamdock\com.cullary.streamdock.sdPlugin && npm install
+```
+
+```bash
+robocopy streamdock\com.cullary.streamdock.sdPlugin "%APPDATA%\HotSpot\StreamDock\plugins\com.cullary.streamdock.sdPlugin" /MIR
+```
+
+Poi riavvia VSD Craft. Le icone si rigenerano con `streamdock\make-icons.ps1`.
+
 ## TURN (per chi non riesce a collegarsi direttamente)
 
 Le chiamate sono peer-to-peer. Su alcune reti (NAT simmetrici, rete mobile, reti aziendali) il traffico deve passare da un relay TURN. Cullary usa il TURN di Cloudflare: i primi 1.000 GB al mese sono gratis, poi costa 0,05 $/GB.
@@ -62,3 +80,10 @@ Le chiamate sono peer-to-peer. Su alcune reti (NAT simmetrici, rete mobile, reti
 3. Carica le chiavi sul Worker pubblicato con `cd server && npx wrangler secret bulk .env`.
 
 Senza chiavi il server funziona lo stesso, ma solo con connessioni dirette (STUN).
+
+## Parola d'Ordine
+
+Per registrarsi o accedere serve una parola d'ordine, che il server tiene come segreto `ACCESS_WORD` e non sta mai nel codice (il repo è pubblico). Senza segreto non entra nessuno.
+
+- In locale: aggiungi `ACCESS_WORD=<parola>` a `server\.env`.
+- Sul Worker pubblicato: `cd server && npx wrangler secret put ACCESS_WORD`. Cambiarla non richiede di reinstallare l'app.
