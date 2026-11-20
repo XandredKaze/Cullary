@@ -263,8 +263,14 @@ async function onSignal(from, data = {}) {
     return;
   }
   if (!myVoice) return;
-  const { description, candidate } = data;
-  const p = peer(from), pc = p.pc;
+  // in ordine, uno alla volta per persona: se una risposta e una nuova offerta arrivano attaccate,
+  // l'offerta va valutata solo dopo che la risposta è applicata, altrimenti sembra una collisione e si perde
+  const p = peer(from);
+  p.queue = (p.queue || Promise.resolve()).then(() => applySignal(p, from, data));
+}
+
+async function applySignal(p, from, { description, candidate }) {
+  const pc = p.pc;
   try {
     if (description) {
       const collision = description.type === 'offer' && (p.makingOffer || pc.signalingState !== 'stable');
@@ -303,24 +309,28 @@ function showStream(owner, stream, localKey) {
   const tile = el('div', { className: 'tile', tabIndex: 0 }, video, card, bar);
   Object.assign(tile, { owner, mine, video });
   tile.ondblclick = () => !tile.classList.contains('no-video') && toggleFullscreen(tile);
-  const kind = () => localKey || kinds.get(stream.id) || 'mic';
+  // finché non arriva la "meta" di chi invia, uno stream con video lo trattiamo come webcam
+  const kind = tile.kind = () => localKey || kinds.get(stream.id) || (stream.getVideoTracks().length ? 'cam' : 'mic');
 
   let vol;
   if (!mine) {
-    // volume per persona e tipo (es. "luca:mic", "luca:app"), ricordato tra una chiamata e l'altra
-    const state = () => (prefs.volumes[`${owner}:${kind()}`] ??= { v: 100, m: false });
+    // volume per persona e tipo (es. "luca:mic", "luca:app"), ricordato tra una chiamata e l'altra.
+    // Il riquadro della webcam regola il microfono della stessa persona (il suo avatar è nascosto).
+    const key = () => `${owner}:${kind() === 'cam' ? 'mic' : kind()}`;
+    const state = () => (prefs.volumes[key()] ??= { v: 100, m: false });
     const range = el('input', { type: 'range', min: 0, max: 100, step: 5, title: 'Volume' });
     const muteBtn = el('button', { title: 'Silenzia solo questo' });
     vol = el('div', { className: 'vol' }, muteBtn, range);
     tile.applyVolume = () => {
       const s = state();
-      range.value = s.v; video.volume = s.v / 100; video.muted = s.m || deafened;
+      range.value = s.v;
+      if (kind() !== 'cam') { video.volume = s.v / 100; video.muted = s.m || deafened; }
       muteBtn.textContent = s.m || !s.v ? '🔇' : '🔊';
       range.ariaLabel = `Volume di ${label.textContent}`; range.ariaValueText = s.v + '%';
     };
-    range.oninput = () => { state().v = +range.value; state().m = false; savePrefs(); tile.applyVolume(); };
+    range.oninput = () => { state().v = +range.value; state().m = false; savePrefs(); applyVolumes(); };
     range.onclick = muteBtn.ondblclick = e => e.stopPropagation();
-    muteBtn.onclick = e => { e.stopPropagation(); state().m = !state().m; savePrefs(); tile.applyVolume(); };
+    muteBtn.onclick = e => { e.stopPropagation(); state().m = !state().m; savePrefs(); applyVolumes(); };
     if (prefs.out?.id) video.setSinkId?.(prefs.out.id).catch(() => {});
     bar.append(vol);
   }
@@ -332,7 +342,7 @@ function showStream(owner, stream, localKey) {
     label.textContent = KIND_LABEL[k] ? `${name} · ${KIND_LABEL[k]}` : name;
     tile.classList.toggle('no-video', !stream.getVideoTracks().length);
     card.replaceChildren(k === 'audio' ? el('span', { className: 'avatar big icon', textContent: '🔈' }) : avatar(owner, 'big'));
-    if (vol) vol.hidden = !stream.getAudioTracks().length;
+    if (vol) vol.hidden = k === 'cam' ? !micTile(owner) : !stream.getAudioTracks().length;
     tile.applyVolume?.();
     layout();
   };
@@ -342,10 +352,16 @@ function showStream(owner, stream, localKey) {
   tile.refresh();
 }
 function removeTile(id) { tiles.get(id)?.remove(); tiles.delete(id); layout(); }
+const micTile = owner => [...tiles.values()].find(t => t.owner === owner && t.kind() === 'mic');
+const applyVolumes = () => tiles.forEach(t => t.applyVolume?.());
 
 // sceglie il numero di colonne che rende i riquadri 16:9 più grandi possibile nello spazio disponibile
 function layout() {
-  const stage = $('#stage'), n = stage.children.length;
+  // chi ha la webcam accesa non ha bisogno anche del riquadro con l'avatar (resta nascosto ma l'audio continua)
+  const withCam = new Set([...tiles.values()].filter(t => t.kind() === 'cam' && !t.classList.contains('no-video')).map(t => t.owner));
+  for (const t of tiles.values()) if (t.kind() === 'mic') t.hidden = withCam.has(t.owner);
+  for (const t of tiles.values()) if (t.kind() === 'cam' && !t.mine) t.querySelector('.vol').hidden = !micTile(t.owner);
+  const stage = $('#stage'), n = [...stage.children].filter(t => !t.hidden).length;
   if (!n || !stage.clientWidth) return;
   const gap = 8, W = stage.clientWidth - 16, H = stage.clientHeight - 16;
   let best = 0;
